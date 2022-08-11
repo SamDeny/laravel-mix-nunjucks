@@ -23,7 +23,7 @@ class NunjucksTask {
       {
         ext: ".html",
         data: {},
-        block: "content",
+        block: null,
         marked: null,
         envOptions: null,
         manageEnv: null,
@@ -87,6 +87,9 @@ class NunjucksTask {
     // glob patterns can only contain forward-slashes, not backward-slashes
     const patterns = [
       this.from.path().replace(/\\/g, '/'),
+      "!**/_*",
+      "!**/_**/*",
+      "!**/_**/**/*",
       "!" + path.posix.join(this.base, `**/_**/**/*`),
       "!" + path.posix.join(this.base, `**/_*`),
     ];
@@ -178,14 +181,13 @@ class NunjucksTask {
       Object.assign(data, { page: frontmatter.attributes });
 
       if (data.page.layout) {
-        template =
-          '{% extends "' +
-          data.page.layout +
-          '.njk" %}\n{% block ' +
-          this.options.block +
-          " %}" +
-          template +
-          "\n{% endblock %}";
+        let block = data.page.block || this.options.block;
+        template = `
+          {% extends "${data.page.layout}.njk" %}
+          ${block? `{% block ${block} %}`: ''}
+          ${template}
+          ${block? `{% endblock %}`: ''}
+        `;
       } else {
         Log.info(`No layout declared in ${srcFile.relativePath()}`);
       }
